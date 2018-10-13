@@ -1,0 +1,40 @@
+version: "3.3"
+services:
+  elasticsearch:
+    image: elasticsearch:5
+    volumes:
+      - /usr/share/elasticsearch/data
+    networks:
+      - elk
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    restart: unless-stopped
+
+  kibana:
+    image: kibana:5
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    networks:
+      - elk
+    ports:
+      - "5601:5601"
+
+  logstash:
+    image: logstash:5
+    command: sh -c "logstash -e 'input { syslog  { type => syslog port => 10514   } gelf { } } output { stdout { codec => rubydebug } elasticsearch { hosts => [ \"elasticsearch\" ] } }'"
+    ports:
+        - "10514:10514/tcp"
+        - "10514:10514/udp"
+        - "12201:12201/udp"
+    volumes:
+            - /home/ubuntu/logstash:/usr/share/logstash/data
+    networks:
+      - elk
+    restart: unless-stopped
+
+networks:
+  elk:
+    driver: bridge
